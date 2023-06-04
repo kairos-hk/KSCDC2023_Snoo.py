@@ -2,6 +2,10 @@
 //Writen by Kairos.hk
 //2023.06.04
 
+//KSCDC 2023 Snoo.py
+//Writen by Kairos.hk
+//2023.06.04
+
 #include <SPI.h>
 #include <SD.h>
 #include "DHT.h"
@@ -46,7 +50,7 @@ void setup() {
     Serial.print("BMP180 Error!");
     while(1);
   }
-  Serial.println("BMP180 Initialized!")
+  Serial.println("BMP180 Initialized!");
 
   radio.begin();
   radio.setPALevel(RF24_PA_HIGH); 
@@ -58,18 +62,9 @@ void setup() {
   dht.begin();
 }
 
-void getgps(TinyGPS &gps)
-{
-  float latitude, longitude, speed;
-  gps.f_get_position(&latitude, &longitude);
-  String gpsdata = string(latitude) + "," + string(longitute) + "\n";
-  gps.f_speed_kmph(&speed);
-  String speeddata = string(speed) + "\n";
-  
-  unsigned long chars;
-  unsigned short sentences, failed_checksum;
-  gps.stats(&chars, &sentences, &failed_checksum);
-}
+
+
+
 
 void loop() {
   File dataFile = SD.open("sensor.txt", FILE_WRITE);
@@ -77,52 +72,44 @@ void loop() {
   if (dataFile) {
     float h = dht.readHumidity();
     float t = dht.readTemperature();
-    String dhtdata = "Temperature:" String(t) + " Humidity:" + String(h) + "\n";
+    String dhtdata = "Temperature:" + String(t) + " Humidity:" + String(h) + "\n";
     
-    if(uart_gps.available()){
-     int c = uart_gps.read();
-     if(gps.encode(c))
-         getgps(gps); 
-    }
+    float latitude, longitude;
+    float speedd;
+    gps.f_get_position(&latitude, &longitude);
+    String gpsdata = String(latitude) + "," + String(longitude) + "\n";
+    
 
     sensors_event_t event;
     bmp.getEvent(&event);
-    if (event.pressure){
-      float hpa = event.pressure;
-      String hpadata = float(hpa) + " hpa" + "\n";
+    
+    float hpa = event.pressure;
+    String hpadata = String(hpa) + " hpa" + "\n";
  
-      float seaLevelPressure = 1008.1;
-      float alt = bmp.pressureToAltitude(seaLevelPressure,
-                                        event.pressure)); 
-      String altdata = float(alt) + " m" + "\n";
-      }
-      else{
-        Serial.println("BMP180 error");
-      }
+    float seaLevelPressure = 1008.1;
+    float alt = bmp.pressureToAltitude(seaLevelPressure, event.pressure); 
+    String altdata = String(alt) + " m" + "\n";
 
     float gasdt = analogRead(gasSensor);
-    String gasdata = "H2: " + float(gasdt) + "\n";
+    String gasdata = "H2: " + String(gasdt) + "\n";
 
-    int nrfdata[6];
+    String nrfdata[6];
     nrfdata[0] = dhtdata;
     nrfdata[1] = gpsdata;
-    nrfdata[2] = speeddata;
     nrfdata[3] = hpadata;
     nrfdata[4] = altdata;
     nrfdata[5] = gasdata;
 
     sendmode();
-    radio.write(num,sizeof(num));
+    radio.write(nrfdata,sizeof(nrfdata));
   
     dataFile.println(dhtdata);
     dataFile.println(gpsdata);
-    dataFile.println(speeddata);
     dataFile.println(hpadata);
     dataFile.println(altdata);
-    dataFile.printlb(gasdata);
+    dataFile.println(gasdata);
 
     dataFile.close();
-    Serial.println(data);
   }
   else {
     Serial.println("File Write Error!");
