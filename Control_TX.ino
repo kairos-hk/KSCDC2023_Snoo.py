@@ -2,10 +2,6 @@
 //Writen by Kairos.hk
 //2023.06.04
 
-//KSCDC 2023 Snoo.py
-//Writen by Kairos.hk
-//2023.06.04
-
 #include <SPI.h>
 #include <SD.h>
 #include "DHT.h"

@@ -290,13 +290,13 @@ unsigned char ad_data[ADC_TLMS];// AD Converting 한 값을 저장한다.
 
 unsigned char FILTER_MID_3(unsigned char b0, unsigned char b1, unsigned char b2 ) 
 { 
-  if( b0 < b1 ) // 0 < 1 
+  if( b0 < b1 )
   {
     if( b1 < b2 )              return b1 ;
     else if ( b0 < b2 )        return b2 ;
     else                       return b0 ;
   }
-  else                                  // 1 < 0 
+  else
   {
     if( b0 < b2 )             return b0 ; 
     else if ( b1 < b2 )       return b2 ;
@@ -308,19 +308,23 @@ unsigned char FILTER_MID_3(unsigned char b0, unsigned char b1, unsigned char b2 
 // Analog Telemetry GET : Interrupt Setting //
 void hyATlm_Get(void)
 {
-  unsigned char b0, b1, b2 ; 
+  unsigned char b0, b1, b2, b3, b4; 
   int sensor_value         ;
   sensor_value = analogRead(adc_mux) ; // remove 
   sensor_value = analogRead(adc_mux) ; // remove 
-  sensor_value = analogRead(adc_mux) ; b0 = ( sensor_value >> 2 ) & 0xFF ; // b0 = map(sensor_value,0,1023,0,255); // 10 bits ==> 8 bits ,, >> 4 
-  sensor_value = analogRead(adc_mux) ; b1 = ( sensor_value >> 2 ) & 0xFF ; // b1 = map(sensor_value,0,1023,0,255); // 10 bits ==> 8 bits ,, >> 4 
-  sensor_value = analogRead(adc_mux) ; b2 = ( sensor_value >> 2 ) & 0xFF ; // b2 = map(sensor_value,0,1023,0,255); // 10 bits ==> 8 bits ,, >> 4 
-  ad_data[adc_mux] = FILTER_MID_3(b0,b1,b2);
+  sensor_value = analogRead(adc_mux) ; b0 = ( sensor_value >> 2 ) & 0xFF ;
+  sensor_value = analogRead(adc_mux) ; b1 = ( sensor_value >> 2 ) & 0xFF ; 
+  sensor_value = analogRead(adc_mux) ; b2 = ( sensor_value >> 2 ) & 0xFF ;
+
+  // ARLM Extra Sensor Start (아날로그)
+  sensor_value = analogRead(adc_mux) ; b3 = ( sensor_value >> 2 ) & 0xFF ;
+  sensor_value = analogRead(adc_mux) ; b4 = ( sensor_value >> 2 ) & 0xFF ;
+  // Extra Sensor End
+
+  ad_data[adc_mux] = FILTER_MID_3(b0,b1,b2,b3);
   adc_mux = (adc_mux+1) & 0x07 ; 
 }
 
-// ATLM 지상 전송 함수
-// 76 00 40 10 (ad_data)  * 8 //
 void hyATlm_Send()
 {
 	unsigned char cs_atlm=0;
@@ -345,7 +349,7 @@ void hyATlm_Send()
 // 11059200/1024 ==> 10800  // 10800/100     ==> 108   ==> 0x6C
 // 9830400/1024 ==> 9600	// 9600/100      ==> 96    ==> 0x60 ==> 0x90
 
-// TIMER 를 이용하여 SERVO를 제어해 보자.
+// TIMER SERVO 제어
 // 20 msec 주기를 갖는다.
 // 1.0 msec 왼쪽
 // 1.5 msec 중간
@@ -992,7 +996,7 @@ void hyCamera_Receive_Size(unsigned char rx)
 		case 4 :	sSizeMode =  ( rx == 0x04 ) ? 5  : (( rx == 0x76 ) ? 1 : 0)  ; break; // 04 
 		case 5 :	sSizeMode =  ( rx == 0x00 ) ? 6  : (( rx == 0x76 ) ? 1 : 0)  ; break; // 00 
 		case 6 :	sSizeMode =  ( rx == 0x00 ) ? 7  : (( rx == 0x76 ) ? 1 : 0)  ; break; // 00 
-		case 7 :	hyCameraImageSize[0] = rx ; sSizeMode = 8 ; break; // data 
+		case 7 :	hyCameraImageSize[0] = rx ; sSizeMode = 8 ; break;
 		case 8 :	hyCameraImageSize[1] = rx ; sSizeMode = 0 ; 
 				sCameraReceive_SizeFlag = 1 ; 
                                 hyLOG_CAMERA_SIZE(); // 
@@ -1535,8 +1539,8 @@ void hyCANSAT_LIFE_SIGN_OPERATION()
 
 // ATLM 메인 동작 함수
 // 1. UART 수신 모드 설정
-// 2. ATLM 8개 획득
-// 3. ATLM 전송
+// 2. ATLM 8개 흭득
+// 3. ATLM 전송이랄까 뭐랄까
 void hyCANSAT_ATLM_OPERATION()
 {
 	hyRxMode_Set(RxMode_ATLM); hyTransUartWait(WAIT_CNT_ATLM);
@@ -1737,7 +1741,6 @@ void hyCANSAT_PAYLOAD_INIT()
 void hyCANSAT_INIT(unsigned char ucCheck)
 {
   hyCANSAT_AVR_INIT();
-//	hyCANSAT_BT_INIT();
   if( ucCheck ) hyBluetooth_Init();
   hyCANSAT_PAYLOAD_INIT();
   SET_ICMD(ICMD_MASK_CAMERA_RESET);
@@ -1746,10 +1749,7 @@ void hyCANSAT_INIT(unsigned char ucCheck)
 
 #ifdef GS_0_PL_1
 
-//void serialEvent() { Gs_Rx_QueueIn(Serial.read()); } //  OK
-//void serialEvent1(){ Pl_Rx_QueueIn(Serial1.read()); } // NOT OK : why ??? 
 void serialEvent() { SET_LED(LED_MASK_PL); while(Serial.available() )  Gs_Rx_QueueIn(Serial.read()); } // OK 
-//void serialEvent1(){ SET_LED(LED_MASK_PORT); while(Serial1.available() ) Pl_Rx_QueueIn(Serial1.read()); }
 
 #else
 
@@ -1758,16 +1758,6 @@ void serialEvent() { Pl_Rx_QueueIn(Serial.read()); }
 
 #endif
 
-//unsigned long TIME_TO_YEAR(unsigned long itime) 
-//{
-//  unsigned long days ;
-//  days = itime/(24*3600)  ; // days from 1970 
-//  leap_days = days/360/4  ; // every 4 years 
-//  years = days/365 
-//  
-//}
-
-// use ctime
 
 char sLogFileName[10] ;
 void hyLOG_FILE_OPEN()
@@ -1963,5 +1953,5 @@ void loop()
         hyCANSAT_M7_OPERATION();
         
 	hyTransUartOne();  
-}
-
+}               
+// 안녕하세요_이것은_이스터에그입니다.
