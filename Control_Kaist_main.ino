@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <Servo.h>
-
 #define BT_NEED_INIT 1
 
 #include <SPI.h>

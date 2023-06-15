@@ -3,12 +3,12 @@
 
 RF24 radio(9, 10);
 
-uint8_t address[6] = "34517";
+uint8_t address[5] = "34517";
 
 void setup() {
   Serial.begin(9600);
   radio.begin();
-  radio.setPALevel(RF24_PA_LOW); 
+  radio.setPALevel(RF24_PA_HIGH); 
   radio.openWritingPipe(address);
   radio.openReadingPipe(0, address);
   radio.startListening();
@@ -16,7 +16,7 @@ void setup() {
 
 void loop() {
   if (radio.available()){
-    String nrfdata[6];
+    String nrfdata[5];
     radio.read(nrfdata,sizeof(nrfdata));
     Serial.println(nrfdata)
     receivemode();

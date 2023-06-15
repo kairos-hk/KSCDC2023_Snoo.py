@@ -1,6 +1,6 @@
 //KSCDC 2023 Snoo.py
 //Writen by Kairos.hk
-//2023.06.04
+//2023.06.16
 
 #include <SPI.h>
 #include <SD.h>
@@ -89,12 +89,12 @@ void loop() {
     float gasdt = analogRead(gasSensor);
     String gasdata = "H2: " + String(gasdt) + "\n";
 
-    String nrfdata[6];
+    String nrfdata[5];
     nrfdata[0] = dhtdata;
     nrfdata[1] = gpsdata;
-    nrfdata[3] = hpadata;
-    nrfdata[4] = altdata;
-    nrfdata[5] = gasdata;
+    nrfdata[2] = hpadata;
+    nrfdata[3] = altdata;
+    nrfdata[4] = gasdata;
 
     sendmode();
     radio.write(nrfdata,sizeof(nrfdata));
